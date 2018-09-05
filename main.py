@@ -34,6 +34,7 @@ trainer.fit(X)
 
 df_loss=pd.DataFrame(trainer.loss)
 df_loss.to_csv('loss_csv')
+df_loss.to_csv('loss.csv')
 
 
 
