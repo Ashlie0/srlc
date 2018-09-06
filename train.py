@@ -15,13 +15,6 @@ class Trainer(object):
     def __init__(self, srlc):
         self.srlc=srlc
     def fit(self, X, epochs=100, plotting=True):
-        """
-        param X: input
-        epochs:訓練回数
-        batch_size:バッチ数
-        plotting:Trueのときプロットする
-        """
-        
         self.X=X
         self.epochs=epochs
         self.plotting=plotting
@@ -39,21 +32,35 @@ class Trainer(object):
                 x2=self.srlc.fwd2(X)
                 y1=np.ones((120,4,22,22), dtype=np.float32)
                 y2=np.ones((120,8,11,11), dtype=np.float32)
+                y1=cuda.to_gpu(y1,0)
+                y2=cuda.to_gpu(y2,0)
                 loss_1 = F.mean_absolute_error(x1, y1)
                 loss_2 = F.mean_absolute_error(x2, y2)
                 loss_sum=loss_1+loss_2
                 
                 self.srlc.cleargrads()
-                loss_sum.backward()
+                if loss_1.data>loss_2.data:
+                    loss_1.backward()
+                else:
+                    loss_2.backward()
                 o_srlc.update()
                 
                 sum_loss_1 += loss_1.data
                 sum_loss_2 += loss_2.data
                 sum_loss_sum += loss_sum.data
-                
+            
             print('epoch:', epoch, 'sum_loss_1:', sum_loss_1,\
                   'sum_loss_2:', sum_loss_2)
                 
             self.loss.append(sum_loss_sum)
             
-        print(self.loss)
+            if self.plotting and epoch%(self.epochs//10)==0:
+                z=self.srlc.fwd1(self.X)
+                z=z.data
+                z=cuda.to_cpu(z)
+                re=z[0][0]
+                plt.imshow(re)
+                plt.gray()
+                plt.show()
+                plt.close()
+        #print(self.loss)
